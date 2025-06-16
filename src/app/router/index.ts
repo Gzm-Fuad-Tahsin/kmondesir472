@@ -1,4 +1,5 @@
 import express from "express";
+import audioRoute from "../modules/audio/audio.route"
 
 
 const router = express.Router();
@@ -11,6 +12,6 @@ const router = express.Router();
 // router.use("/cart", cartRoute);
 // router.use("/order", orderRoute);
 // router.use("/payment",paymentRouter)
-// router.use("/chat", chatRoute);
+router.use("/audio", audioRoute);
 
 export default router;

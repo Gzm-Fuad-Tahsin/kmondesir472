@@ -13,7 +13,7 @@ const audioSchema = new mongoose.Schema<IAudio>({
   tags: { type: Array, default: [] },
   author: { type: String, required: true },
   about: { type: String, default: '' },
-  category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
+  category: { type: Schema.Types.ObjectId, ref: 'Category',  },
 }, { timestamps: true });
 
 export const Audio = mongoose.model<IAudio>('Audio', audioSchema);

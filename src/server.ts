@@ -1,13 +1,14 @@
 /* eslint-disable no-console */
 import { Server } from "http";
 import app from "./app";
+import mongoose from "mongoose";
 
 let server: Server;
 
 async function main() {
   try {
     // console.log(config.database_URL);
-    // await mongoose.connect(config.database_URL as string);
+    await mongoose.connect(process.env.MONGO_URI as string);
     server = app.listen(process.env.PORT || 4000, () => {
       console.log(`App listening on port ${process.env.PORT}`);
     });
