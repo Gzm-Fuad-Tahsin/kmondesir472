@@ -71,15 +71,26 @@ export const getCategoryById = catchAsync(async (req, res) => {
 // Update a category
 export const updateCategory = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const { name, description, about, image, slug } = req.body;
+  const { name, description, about, slug } = req.body;
 
   if (!id) {
     throw new AppError(400, "Category ID is required");
   }
+  let data:any ={}
+    if (req.file) {
+
+        const image1 = await uploadToCloudinary(req.file.path);
+        data.image  = image1?.secure_url;
+    }
+    if (name) { data.name = name }
+    if (description) { data.description = description }
+    if (about) { data.about = about }
+    if (slug) { data.slug = slug }
+  
 
   const updatedCategory = await Category.findByIdAndUpdate(
     id,
-    { name, description, about, image, slug },
+    data,
     { new: true, runValidators: true }
   );
 
