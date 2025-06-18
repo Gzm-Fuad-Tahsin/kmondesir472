@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { isAdmin, protect } from '../../../middlewares/auth';
-import { streamAudio, uploadAudio } from './audio.controller';
+import { deleteAudio, getAllAudios, streamAudio, updateAudio, uploadAudio } from './audio.controller';
 
 const router = express.Router();
 
@@ -32,5 +32,8 @@ router.post(
 
 // ✅ Route: Stream audio securely with listener tracking
 router.get('/:audioId/play', streamAudio);
+router.patch ('/:audioId/update', updateAudio);
+router.get('/all-audio', getAllAudios);
+router.delete( '/:audioId', deleteAudio);
 
 export default router;

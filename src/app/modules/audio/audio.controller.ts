@@ -32,7 +32,7 @@ const encryptFile = (inputPath: string, outputPath: string) => {
 };
 
 export const uploadAudio = catchAsync(async (req, res) => {
-  const { title, subject, language, description, tags, author, about } = req.body;
+  const { title, subject, language, description, tags, author, about,chapter,category } = req.body;
 
 const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
@@ -68,7 +68,8 @@ if (!files || !files['audio'] || !files['coverImage']) {
     tags,
     author,
     about,
-    // category,
+    category,
+    chapter
   });
 
   sendResponse(res, {
@@ -95,4 +96,72 @@ export const streamAudio = catchAsync(async (req, res) => {
   res.setHeader('Content-Disposition', 'inline');
 
   readStream.pipe(decipher).pipe(res);
+});
+
+export const getAllAudios = catchAsync(async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  const filter: any = {};
+  if (req.query.language) filter.language = req.query.language;
+  if (req.query.subject) filter.subject = req.query.subject;
+
+  const [audios, total] = await Promise.all([
+    Audio.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Audio.countDocuments(filter),
+  ]);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Audio list fetched successfully',
+    data: {
+      audios,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
+  });
+});
+
+
+export const updateAudio = catchAsync(async (req, res) => {
+  const { audioId } = req.params;
+  const updateData = req.body;
+
+  const audio = await Audio.findByIdAndUpdate(audioId, updateData, { new: true });
+
+  if (!audio) throw new AppError(404, 'Audio not found');
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Audio updated successfully',
+    data: audio,
+  });
+});
+
+
+export const deleteAudio = catchAsync(async (req, res) => {
+  const { audioId } = req.params;
+
+  const audio = await Audio.findById(audioId);
+  if (!audio) throw new AppError(404, 'Audio not found');
+
+  // Delete audio and cover image from disk
+  if (fs.existsSync(audio.filePath)) fs.unlinkSync(audio.filePath);
+  if (fs.existsSync(audio.coverImage)) fs.unlinkSync(audio.coverImage);
+
+  await audio.deleteOne();
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Audio deleted successfully',
+    data: ""
+  });
 });

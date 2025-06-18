@@ -15,4 +15,9 @@ export interface IAudio extends Document {
   category: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  chapter : [{
+    title: string;
+    start: string;
+    end: string;
+  }]
 }

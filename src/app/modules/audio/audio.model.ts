@@ -14,6 +14,11 @@ const audioSchema = new mongoose.Schema<IAudio>({
   author: { type: String, required: true },
   about: { type: String, default: '' },
   category: { type: Schema.Types.ObjectId, ref: 'Category',  },
+  chapter: [{
+    title: { type: String, },
+    start: {type: String,},
+    end: {type: String,},
+  }]
 }, { timestamps: true });
 
 export const Audio = mongoose.model<IAudio>('Audio', audioSchema);

@@ -6,7 +6,7 @@ import sendResponse from '../../utils/sendResponse'
 
 // Create Subscription
 export const createSubscription = catchAsync(async (req, res) => {
-  const { planName, price, planValid } = req.body
+  const { planName, price, planValid,feature } = req.body
 
   if (!planName  || price === undefined) {
     throw new AppError(
@@ -19,6 +19,7 @@ export const createSubscription = catchAsync(async (req, res) => {
     planName,
     price,
     planValid,
+    feature
   })
 
   sendResponse(res, {
