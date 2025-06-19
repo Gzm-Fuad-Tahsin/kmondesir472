@@ -4,7 +4,8 @@ import AppError from '../../errors/AppError'
 import { Payment } from './payment.model'
 import sendResponse from '../../utils/sendResponse'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+//  console.log()
+const stripe = new Stripe("sk_test_51RLzmKCctG7Qj84qUuHfTQkx16eK33EzS585wy4jO9k6jwBFne2VlQCuOuH5k56yO4a0kEV0HbMGY2COkCVpge6q00x97HBQk3" as string, {
   apiVersion: '2025-05-28.basil',
 })
 
