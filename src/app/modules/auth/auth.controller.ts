@@ -118,7 +118,7 @@ export const login = catchAsync(async (req, res) => {
         statusCode: httpStatus.OK,
         success: true,
         message: 'User Logged in successfully',
-        data: { accessToken, refreshToken: refreshToken, role: user.role ,_id: user._id},  
+        data: { accessToken, refreshToken: refreshToken, role: user.role, _id: user._id },
     });
 
 
@@ -212,6 +212,33 @@ export const verifyEmail = catchAsync(async (req, res) => {
         const savedOTP = verifyToken(user.verificationInfo.token, process.env.OTP_SECRET || "") as JwtPayload
         console.log(savedOTP)
         if (otp === savedOTP.otp) {
+
+            const jwtPayload = {
+                _id: user._id,
+                email: user.email,
+                role: user.role,
+            };
+            const accessToken = createToken(
+                jwtPayload,
+                process.env.JWT_ACCESS_SECRET as string,
+                process.env.JWT_ACCESS_EXPIRES_IN as string,
+            );
+
+            const refreshToken = createToken(
+                jwtPayload,
+                process.env.JWT_REFRESH_SECRET as string,
+                process.env.JWT_REFRESH_EXPIRES_IN as string,
+            );
+
+            user.refreshToken = refreshToken;
+
+            res.cookie('refreshToken', refreshToken, {
+                secure: true,
+                httpOnly: true,
+                sameSite: 'none',
+                maxAge: 1000 * 60 * 60 * 24 * 365,
+            });
+
             user.verificationInfo.verified = true
             user.verificationInfo.token = ""
             await user.save()
@@ -220,7 +247,7 @@ export const verifyEmail = catchAsync(async (req, res) => {
                 statusCode: httpStatus.OK,
                 success: true,
                 message: 'User verified',
-                data: ""
+                data: {accessToken, refreshToken, role: user.role, _id: user._id}
             })
 
 
@@ -245,8 +272,8 @@ export const changePassword = catchAsync(async (req, res) => {
     if (!user) {
         throw new AppError(httpStatus.NOT_FOUND, 'User not found')
     }
-   user.password =  newPassword;
-   await user.save()
+    user.password = newPassword;
+    await user.save()
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
