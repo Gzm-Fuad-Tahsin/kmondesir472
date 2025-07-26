@@ -47,6 +47,23 @@ export const getPlaylist = catchAsync(async (req, res) => {
   });
 });
 
+export const getPlaylistAudioId = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+
+  const playlist = await Playlist.findOne({ user: userId }).select("audio");
+
+  if (!playlist) {
+    throw new AppError(httpStatus.NOT_FOUND, "No playlist found");
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Playlist retrieved successfully",
+    data: playlist,
+  });
+});
+
 export const deleteFromPlaylist = catchAsync(async (req, res) => {
   const userId = req.user._id;
   const { audioId } = req.body;
