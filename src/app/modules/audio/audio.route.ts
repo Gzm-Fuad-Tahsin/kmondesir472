@@ -5,18 +5,8 @@ import { deleteAudio, getAllAudios, streamAudio, updateAudio, uploadAudio } from
 
 const router = express.Router();
 
-// Configure Multer for audio and cover image
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    if (file.fieldname === 'audio') cb(null, 'uploads/audio/');
-    else cb(null, 'uploads/covers/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
 
-const upload = multer({ storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ✅ Route: Upload encrypted audio (Admin only)
 router.post(

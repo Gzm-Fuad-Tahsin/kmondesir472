@@ -2,6 +2,7 @@
 
 import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
+import streamifier from 'streamifier';
 import path from 'path';
 import crypto from 'crypto';
 import catchAsync from '../../utils/catchAsync';
@@ -83,40 +84,31 @@ if (!files || !files['audio'] || !files['coverImage']) {
 
   const audioFile = files['audio'][0];
   const coverImage = files['coverImage'][0];
-  const originalAudioPath = audioFile.path;
 
-  const wavPath = originalAudioPath.replace(path.extname(originalAudioPath), '.wav');
-
-  // Convert MP3 (or any) to WAV
-  await new Promise((resolve, reject) => {
-    ffmpeg(originalAudioPath)
+  // Step 1: Convert MP3 buffer to WAV buffer using ffmpeg
+  const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
       .toFormat('wav')
       .on('error', reject)
-      .on('end', resolve)
-      .save(wavPath);
+      .on('end', () => {
+        const finalBuffer = Buffer.concat(chunks);
+        resolve(finalBuffer);
+      })
+      .pipe();
+
+    command.on('data', (chunk) => chunks.push(chunk));
   });
 
-  // // Upload WAV file to Cloudinary (as raw file)
-  // const audioUploadResult = await cloudinary.uploader.upload(wavPath, {
-  //   resource_type: 'raw',
-  //   folder: 'audio_files',
-  // });
+  // Step 2: Upload WAV buffer to Cloudinary
+  const audioUploadResult = await uploadToCloudinary(wavBuffer, audioFile.originalname, 'audio_files');
+  if (!audioUploadResult) throw new AppError(500, 'Failed to upload audio to Cloudinary');
 
-  // // Upload Cover Image to Cloudinary (as image)
-  // const imageUploadResult = await cloudinary.uploader.upload(coverImage.path, {
-  //   folder: 'audio_covers',
-  // });
+  // Step 3: Upload Cover Image buffer to Cloudinary
+  const imageUploadResult = await uploadToCloudinary(coverImage.buffer, coverImage.originalname, 'audio_covers');
+  if (!imageUploadResult) throw new AppError(500, 'Failed to upload cover image to Cloudinary');
 
-  const audioUploadResult = await uploadToCloudinary(wavPath)
-
-  const imageUploadResult = await uploadToCloudinary( coverImage.path);
-  // console.log( imageUploadResult );
-
-
-  // Delete local files
-  fs.unlinkSync(originalAudioPath);
-  fs.unlinkSync(wavPath);
-  fs.unlinkSync(coverImage.path);
+  // Step 4: Save to MongoDB
 
   const audio = await Audio.create({
     title,

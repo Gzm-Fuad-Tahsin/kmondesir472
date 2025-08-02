@@ -14,8 +14,10 @@ export const createCategory = catchAsync(async (req, res) => {
   }
       let image
     if (req.file) {
+      console.log( req.file);
 
-        const image1 = await uploadToCloudinary(req.file.path);
+        const image1 = await uploadToCloudinary(req.file.buffer, req.file.originalname, );
+        console.log( image1)
         image = image1?.secure_url;
     }
 
@@ -79,7 +81,7 @@ export const updateCategory = catchAsync(async (req, res) => {
   let data:any ={}
     if (req.file) {
 
-        const image1 = await uploadToCloudinary(req.file.path);
+        const image1 = await uploadToCloudinary(req.file.buffer, req.file.originalname);
         data.image  = image1?.secure_url;
     }
     if (name) { data.name = name }
