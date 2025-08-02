@@ -4,11 +4,11 @@ import dotenv from "dotenv";
 import router from './app/router';
 import { globalErrorHandler } from "./middlewares/globalErrorHandler";
 import { notFound } from "./middlewares/notFound";
-
+import cors from 'cors'
 dotenv.config();
 
 const app: Express = express();
-
+app.use(cors({ origin: '*' }))
 //parsers
 app.use(express.json());
 
