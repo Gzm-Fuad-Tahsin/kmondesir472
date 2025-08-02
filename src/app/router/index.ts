@@ -15,7 +15,7 @@ router.use("/auth", authRoute);
 // router.use("/user", userRoute);
 // router.use("/seller", sellerRoute);
 router.use("/playlist", playlistRoute);
-router.use("/subscription", subscriptionRoute);
+router.use("/", subscriptionRoute);
 router.use("/category", categoryRoute);
 router.use("/payment",paymentRoute)
 router.use("/audio", audioRoute);

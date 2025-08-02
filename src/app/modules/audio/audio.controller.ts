@@ -11,12 +11,8 @@ import sendResponse from '../../utils/sendResponse';
 
 
 import { v2 as cloudinary } from 'cloudinary'
+import { uploadToCloudinary } from '../../utils/cloudinary';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
 
 const encryptFile = (inputPath: string, outputPath: string) => {
   const key = process.env.ENCRYPTION_KEY;
@@ -39,6 +35,16 @@ const encryptFile = (inputPath: string, outputPath: string) => {
       .on('error', reject);
   });
 };
+
+// CLOUDINARY_CLOUD_NAME=ddtuyxcsl
+// CLOUDINARY_API_KEY=155594432527689
+// CLOUDINARY_API_SECRET=fw86uLN2JW_S9tYxb69R48Fym2k
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
 
 export const uploadAudio = catchAsync(async (req, res) => {
   const { title, subject, language, description, tags, author, about,chapter,category } = req.body;
@@ -90,16 +96,22 @@ if (!files || !files['audio'] || !files['coverImage']) {
       .save(wavPath);
   });
 
-  // Upload WAV file to Cloudinary (as raw file)
-  const audioUploadResult = await cloudinary.uploader.upload(wavPath, {
-    resource_type: 'raw',
-    folder: 'audio_files',
-  });
+  // // Upload WAV file to Cloudinary (as raw file)
+  // const audioUploadResult = await cloudinary.uploader.upload(wavPath, {
+  //   resource_type: 'raw',
+  //   folder: 'audio_files',
+  // });
 
-  // Upload Cover Image to Cloudinary (as image)
-  const imageUploadResult = await cloudinary.uploader.upload(coverImage.path, {
-    folder: 'audio_covers',
-  });
+  // // Upload Cover Image to Cloudinary (as image)
+  // const imageUploadResult = await cloudinary.uploader.upload(coverImage.path, {
+  //   folder: 'audio_covers',
+  // });
+
+  const audioUploadResult = await uploadToCloudinary(wavPath)
+
+  const imageUploadResult = await uploadToCloudinary( coverImage.path);
+  // console.log( imageUploadResult );
+
 
   // Delete local files
   fs.unlinkSync(originalAudioPath);
@@ -110,8 +122,8 @@ if (!files || !files['audio'] || !files['coverImage']) {
     title,
     subject,
     language,
-    filePath: audioUploadResult.secure_url,
-    coverImage: imageUploadResult.secure_url,
+    filePath: audioUploadResult?.secure_url,
+    coverImage: imageUploadResult?.secure_url,
     description,
     tags,
     author,
@@ -135,15 +147,12 @@ export const streamAudio = catchAsync(async (req, res) => {
 
   audio.listeners += 1;
   await audio.save();
-
-  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(process.env.ENCRYPTION_KEY!), Buffer.from(process.env.IV!));
-  const readStream = fs.createReadStream(audio.filePath);
-
-  res.setHeader('Content-Type', 'audio/wav');
-  res.setHeader('Accept-Ranges', 'bytes');
-  res.setHeader('Content-Disposition', 'inline');
-
-  readStream.pipe(decipher).pipe(res);
+  sendResponse(res,{
+    statusCode: 200,
+    success: true,
+    message: 'Audio streamed successfully.',
+    data: audio,
+  })
 });
 
 export const getAllAudios = catchAsync(async (req, res) => {

@@ -1,5 +1,8 @@
 import { v2 as cloudinary } from 'cloudinary'
 import fs from 'fs'
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -9,24 +12,40 @@ cloudinary.config({
 
 export const uploadToCloudinary = async (localFilePath: string) => {
   try {
-    if (!localFilePath) return null
+    if (!localFilePath || !fs.existsSync(localFilePath)) {
+      console.error('Invalid file path or file does not exist:', localFilePath);
+      return null;
+    }
+
+    const fileExt = path.extname(localFilePath).toLowerCase();
+    const resourceType = fileExt === '.jpg' || fileExt === '.png' || fileExt === '.jpeg'
+      ? 'image'
+      : fileExt === '.mp4' || fileExt === '.mov'
+      ? 'video'
+      : 'raw';
 
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: 'auto',
-    })
+      resource_type: resourceType,
+      folder: 'uploads', // Optional
+    });
 
-    // Remove file from local storage after upload
-    fs.unlinkSync(localFilePath)
+    // console.log('Upload successful:', response);
 
-    return response
+    // Optionally delete local file after upload
+    // fs.unlinkSync(localFilePath);
+
+    return response;
   } catch (error) {
-    // Remove file from local storage if upload fails
-    if (fs.existsSync(localFilePath)) {
-      fs.unlinkSync(localFilePath)
-    }
-    return null
+    console.error('Upload failed:', error);
+
+    // // Delete local file if it exists
+    // if (fs.existsSync(localFilePath)) {
+    //   fs.unlinkSync(localFilePath);
+    // }
+
+    return null;
   }
-}
+};
 
 export const deleteFromCloudinary = async (publicId: string) => {
   try {
