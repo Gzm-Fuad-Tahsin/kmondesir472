@@ -9,6 +9,15 @@ import AppError from '../../errors/AppError';
 import { Audio } from './audio.model';
 import sendResponse from '../../utils/sendResponse';
 
+
+import { v2 as cloudinary } from 'cloudinary'
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
 const encryptFile = (inputPath: string, outputPath: string) => {
   const key = process.env.ENCRYPTION_KEY;
   const iv = process.env.IV;
@@ -40,30 +49,69 @@ if (!files || !files['audio'] || !files['coverImage']) {
   throw new AppError( 400, 'Audio and cover image are required.');
 }
 
-  const audioFile = files['audio'][0] as any;
-  const coverImage = files['coverImage'][0];
-  const originalPath = audioFile.path;
-  const wavPath = originalPath.replace(path.extname(originalPath), '.wav');
-  const encryptedPath = wavPath.replace('.wav', '.enc');
+  // const audioFile = files['audio'][0] as any;
+  // const coverImage = files['coverImage'][0];
+  // const originalPath = audioFile.path;
+  // const wavPath = originalPath.replace(path.extname(originalPath), '.wav');
+  // const encryptedPath = wavPath.replace('.wav', '.enc');
 
+  // await new Promise((resolve, reject) => {
+  //   ffmpeg(originalPath)
+  //     .toFormat('wav')
+  //     .on('error', reject)
+  //     .on('end', resolve)
+  //     .save(wavPath);
+  // });
+
+  // // await encryptFile(wavPath, encryptedPath);
+  //  // Upload WAV file to Cloudinary (as raw file)
+  // const audioUploadResult = await cloudinary.uploader.upload(wavPath, {
+  //   resource_type: 'raw',
+  //   folder: 'audio_files',
+  // });
+
+  // // Upload Cover Image to Cloudinary (as image)
+  // const imageUploadResult = await cloudinary.uploader.upload(coverImage.path, {
+  //   folder: 'audio_covers',
+  // });
+
+  const audioFile = files['audio'][0];
+  const coverImage = files['coverImage'][0];
+  const originalAudioPath = audioFile.path;
+
+  const wavPath = originalAudioPath.replace(path.extname(originalAudioPath), '.wav');
+
+  // Convert MP3 (or any) to WAV
   await new Promise((resolve, reject) => {
-    ffmpeg(originalPath)
+    ffmpeg(originalAudioPath)
       .toFormat('wav')
       .on('error', reject)
       .on('end', resolve)
       .save(wavPath);
   });
 
-  await encryptFile(wavPath, encryptedPath);
-  fs.unlinkSync(originalPath);
+  // Upload WAV file to Cloudinary (as raw file)
+  const audioUploadResult = await cloudinary.uploader.upload(wavPath, {
+    resource_type: 'raw',
+    folder: 'audio_files',
+  });
+
+  // Upload Cover Image to Cloudinary (as image)
+  const imageUploadResult = await cloudinary.uploader.upload(coverImage.path, {
+    folder: 'audio_covers',
+  });
+
+  // Delete local files
+  fs.unlinkSync(originalAudioPath);
   fs.unlinkSync(wavPath);
+  fs.unlinkSync(coverImage.path);
 
   const audio = await Audio.create({
     title,
     subject,
     language,
-    filePath: encryptedPath,
-    coverImage: coverImage.path,
+    filePath: audioUploadResult.secure_url,
+    coverImage: imageUploadResult.secure_url,
     description,
     tags,
     author,
