@@ -64,7 +64,7 @@ export const login = catchAsync(async (req, res) => {
     }
     // console.log(await User.isPasswordMatched(password.toString(), user.password))
     if (user?.password && !(await User.isPasswordMatched(password, user.password))) {
-        throw new AppError(httpStatus.FORBIDDEN, 'Password is not correct');
+        throw new AppError(httpStatus.UNAUTHORIZED, 'Password is not correct');
     }
     if (! await User.isOTPVerified(user._id)) {
         const otp = generateOTP()
