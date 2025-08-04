@@ -12,7 +12,7 @@ app.use(cors({ origin: '*' }))
 //parsers
 app.use(express.json());
 
-app.use('/api/v1', router);
+
 const port = process.env.PORT || 3000;
 // app.use(cookieParser());
 
@@ -21,6 +21,7 @@ app.use(globalErrorHandler);
 
 /** ------------ NOT FOUND URL ------------------- */
 app.use(notFound as never);
+app.use('/api/v1', router);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
@@ -31,9 +32,9 @@ app.get("/", (req: Request, res: Response) => {
 // app.listen(port, () => {
 //   console.log(`[server]: Server is running at http://localhost:${port}`);
 // });
-/**------------ GLOBAL ERROR HANDLER -------------------*/
-app.use(globalErrorHandler);
+// /**------------ GLOBAL ERROR HANDLER -------------------*/
+// app.use(globalErrorHandler);
 
-/** ------------ NOT FOUND URL ------------------- */
-app.use(notFound as never);
+// /** ------------ NOT FOUND URL ------------------- */
+// app.use(notFound as never);
 export default app;
