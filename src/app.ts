@@ -11,7 +11,7 @@ const app: Express = express();
 app.use(cors({ origin: '*' }))
 //parsers
 app.use(express.json());
-
+app.use('/api/v1', router);
 
 const port = process.env.PORT || 3000;
 // app.use(cookieParser());
@@ -21,7 +21,7 @@ app.use(globalErrorHandler);
 
 /** ------------ NOT FOUND URL ------------------- */
 app.use(notFound as never);
-app.use('/api/v1', router);
+
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");

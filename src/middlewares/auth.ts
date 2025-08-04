@@ -3,8 +3,9 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import httpStatus from "http-status";
 import AppError from "../app/errors/AppError";
 import { User } from "../app/modules/user/user.model";
+import catchAsync from "../app/utils/catchAsync";
 
-export const protect = async (req: Request, res: Response, next: NextFunction) => {
+export const protect = catchAsync(async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) throw new AppError(httpStatus.NOT_FOUND, "Token not found");
 
@@ -17,20 +18,21 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     }
     next();
   } catch (err) {
+    console.log( err );
     throw new AppError(401, "Invalid token");
   }
-};
+})
 
-export const isAdmin = (req: Request, res: Response, next: NextFunction): void => {
+export const isAdmin = catchAsync(async (req, res, next) => {
   if (req.user?.role !== "admin") {
     throw new AppError(403, "Access denied. You are not an admin.");
   }
   next();
-};
+})
 
-export const isDriver = (req: Request, res: Response, next: NextFunction): void => {
+export const isDriver = catchAsync(async(req, res, next) => {
   if (req.user?.role !== "driver") {
     throw new AppError(403, "Access denied. You are not an driver.");
   }
   next();
-};
+})
