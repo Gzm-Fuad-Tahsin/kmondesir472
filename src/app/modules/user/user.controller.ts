@@ -3,6 +3,8 @@ import AppError from "../../errors/AppError";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { User } from "./user.model";
+import { Audio } from "../audio/audio.model";
+import { Payment } from "../payment/payment.model";
 
 
 export const updateProfile = catchAsync(async (req, res) => {
@@ -36,17 +38,17 @@ export const getUsers = catchAsync(async (req, res) => {
   })
 })
 
-export const getSingleUser = catchAsync(async (req, res) =>{
+export const getSingleUser = catchAsync(async (req, res) => {
   const user = await User.findById(req.params.id).select("-password -verificationInfo -refreshToken -password_reset_token")
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, "User not found")
-    }
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'Get single user',
-      data: user
-      })
+  }
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Get single user',
+    data: user
+  })
 })
 
 
@@ -82,3 +84,105 @@ export const getSingleUser = catchAsync(async (req, res) =>{
 //     data: Route
 //     })
 // })
+export const adminDashboard = catchAsync(async (req, res) => {
+  // Total counts
+  const totalUsers = await User.countDocuments();
+  const totalAudios = await Audio.countDocuments();
+
+  // Total Revenue (Sum of amounts)
+  const totalRevenueAgg = await Payment.aggregate([
+    {
+      $group: {
+        _id: null,
+        total: { $sum: '$amount' }
+      }
+    }
+  ]);
+  const totalRevenue = totalRevenueAgg[0]?.total || 0;
+
+  // Revenue by Month (for chart)
+  const revenueChart = await Payment.aggregate([
+    {
+      $group: {
+        _id: {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' }
+        },
+        total: { $sum: '$amount' }
+      }
+    },
+    {
+      $sort: { '_id.year': 1, '_id.month': 1 }
+    }
+  ]);
+
+  const revenueChartFormatted = revenueChart.map((item) => ({
+    label: `${item._id.month}-${item._id.year}`,
+    value: item.total
+  }));
+
+  // Most popular audios by play count (for pie chart)
+  const topAudios = await Audio.find({})
+    .sort({ listeners: -1 }) // Replace `playCount` with your own field
+    .limit(5)
+    .select('title listeners');
+
+  const popularAudioChart = topAudios.map((audio) => ({
+    label: audio.title,
+    value: audio.listeners
+  }));
+
+  // Final response
+  // res.json({
+  //   totalUsers,
+  //   totalAudios,
+  //   totalRevenue,
+  //   revenueChart: revenueChartFormatted,
+  //   popularAudioChart
+  // });
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: 'Data fetched successfully',
+    data: {
+      totalUsers,
+      totalAudios,
+      totalRevenue,
+      revenueChart: revenueChartFormatted,
+      popularAudioChart
+    }
+
+  })
+});
+
+
+export const getHomeAudios = catchAsync(async (req, res) => {
+  const [featuredAudios, trendingAudios, topWeeklyAudios] = await Promise.all([
+    // Latest 3 audios
+    Audio.find().sort({ createdAt: -1 }).limit(3),
+
+    // Most listened audios
+    Audio.find().sort({ listeners: -1 }).limit(6),
+
+    // Top this week (last 7 days)
+    Audio.find({
+      createdAt: {
+        $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      },
+    }).sort({ listeners: -1 }).limit(6),
+  ]);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Home page audios fetched successfully',
+    data: {
+      featuredAudios,
+      trendingAudios,
+      topWeeklyAudios,
+    },
+  });
+});
+
+
+
