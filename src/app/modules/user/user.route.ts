@@ -5,7 +5,7 @@ import { adminDashboard, getHomeAudios, getSingleUser, getUsers, updateProfile }
 const router = express.Router()
 
 router.patch('/update-profile',protect, updateProfile)
-router.get('/single-user/:id',protect, getSingleUser)
+router.get('/single-user',protect, getSingleUser)
 // router.get("/get-notfication", protect, getAllNotification)
 // router.get('/mark-as-read', protect, markAllAsRead)
 

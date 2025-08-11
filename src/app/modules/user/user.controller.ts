@@ -39,7 +39,7 @@ export const getUsers = catchAsync(async (req, res) => {
 })
 
 export const getSingleUser = catchAsync(async (req, res) => {
-  const user = await User.findById(req.params.id).select("-password -verificationInfo -refreshToken -password_reset_token")
+  const user = await User.findById(req.user._id).select("-password -verificationInfo -refreshToken -password_reset_token")
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, "User not found")
   }
