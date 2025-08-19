@@ -153,7 +153,12 @@ export const getAllAudios = catchAsync(async (req, res) => {
   const skip = (page - 1) * limit;
 
   const filter: any = {};
-  if (req.query.language) filter.language = req.query.language;
+ if (req.query.q) {
+  const search = new RegExp(req.query.q as any, "i"); // case-insensitive regex
+  filter.$or = [
+    { title: search }
+  ];
+}
   if (req.query.subject) filter.subject = req.query.subject;
   if( req.query.category) filter.category = req.query.category
 
