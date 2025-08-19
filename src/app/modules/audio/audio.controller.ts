@@ -155,6 +155,7 @@ export const getAllAudios = catchAsync(async (req, res) => {
   const filter: any = {};
   if (req.query.language) filter.language = req.query.language;
   if (req.query.subject) filter.subject = req.query.subject;
+  if( req.query.category) filter.category = req.query.category
 
   const [audios, total] = await Promise.all([
     Audio.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
