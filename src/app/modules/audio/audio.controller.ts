@@ -163,7 +163,7 @@ export const getAllAudios = catchAsync(async (req, res) => {
   if( req.query.category) filter.category = req.query.category
 
   const [audios, total] = await Promise.all([
-    Audio.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+    Audio.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }).populate("category"),
     Audio.countDocuments(filter),
   ]);
 
