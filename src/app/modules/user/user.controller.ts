@@ -159,17 +159,17 @@ export const adminDashboard = catchAsync(async (req, res) => {
 export const getHomeAudios = catchAsync(async (req, res) => {
   const [featuredAudios, trendingAudios, topWeeklyAudios] = await Promise.all([
     // Latest 3 audios
-    Audio.find().sort({ createdAt: -1 }).limit(3),
+    Audio.find().populate('category').sort({ createdAt: -1 }).limit(3),
 
     // Most listened audios
-    Audio.find().sort({ listeners: -1 }).limit(6),
+    Audio.find().populate('category').sort({ listeners: -1 }).limit(6),
 
     // Top this week (last 7 days)
     Audio.find({
       createdAt: {
         $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       },
-    }).sort({ listeners: -1 }).limit(6),
+    }).populate('category').sort({ listeners: -1 }).limit(6),
   ]);
 
   sendResponse(res, {
