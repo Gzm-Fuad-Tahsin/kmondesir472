@@ -10,36 +10,82 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
+// export const uploadToCloudinary = async (
+//   buffer: Buffer,
+//   originalName: string,
+//   folder = 'uploads'
+// ): Promise<UploadApiResponse | null> => {
+//   try {
+//     if (!buffer || !originalName) {
+//       console.error('Invalid buffer or original filename.');
+//       return null;
+//     }
+
+//     const fileExt = originalName.split('.').pop()?.toLowerCase() || '';
+//     const resourceType =
+//       ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)
+//         ? 'image'
+//         : ['mp4', 'mov', 'webm'].includes(fileExt)
+//         ? 'video'
+//         : 'raw';
+
+//     const base64Data = buffer.toString('base64');
+//     const dataUri = `data:application/octet-stream;base64,${base64Data}`;
+
+//     const result = await cloudinary.uploader.upload(dataUri, {
+//       resource_type: resourceType,
+//       folder,
+//     });
+
+//     return result;
+//   } catch (error) {
+//     console.error('Cloudinary buffer upload failed:', error);
+//     return null;
+//   }
+// };
+
+
 export const uploadToCloudinary = async (
   buffer: Buffer,
   originalName: string,
-  folder = 'uploads'
+  folder = "uploads"
 ): Promise<UploadApiResponse | null> => {
   try {
     if (!buffer || !originalName) {
-      console.error('Invalid buffer or original filename.');
+      console.error("Invalid buffer or original filename.");
       return null;
     }
 
-    const fileExt = originalName.split('.').pop()?.toLowerCase() || '';
+    const fileExt = originalName.split(".").pop()?.toLowerCase() || "";
     const resourceType =
-      ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)
-        ? 'image'
-        : ['mp4', 'mov', 'webm'].includes(fileExt)
-        ? 'video'
-        : 'raw';
+      ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExt)
+        ? "image"
+        : ["mp4", "mov", "webm"].includes(fileExt)
+        ? "video"
+        : "raw";
 
-    const base64Data = buffer.toString('base64');
-    const dataUri = `data:application/octet-stream;base64,${base64Data}`;
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: resourceType,
+          folder,
+          public_id: originalName.split(".")[0], // optional: keep file name
+        },
+        (error, result) => {
+          if (error) {
+            console.error("Cloudinary upload_stream failed:", error);
+            reject(error);
+          } else {
+            resolve(result as UploadApiResponse);
+          }
+        }
+      );
 
-    const result = await cloudinary.uploader.upload(dataUri, {
-      resource_type: resourceType,
-      folder,
+      // Pipe the buffer into the upload stream
+      uploadStream.end(buffer);
     });
-
-    return result;
   } catch (error) {
-    console.error('Cloudinary buffer upload failed:', error);
+    console.error("Cloudinary buffer upload failed:", error);
     return null;
   }
 };
