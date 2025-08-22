@@ -10,7 +10,7 @@ const stripe = new Stripe("sk_test_51RLzmKCctG7Qj84qUuHfTQkx16eK33EzS585wy4jO9k6
 })
 
 export const createPayment = catchAsync( async (req, res) => {
-  const { userId, ticketId, ReserveBusId, amount } = req.body
+  const { userId, subscriptionId, amount } = req.body
 
   console.log(req.body);
 
@@ -25,16 +25,14 @@ throw new AppError(400, "All fileds are requied")
       currency: 'usd',
       metadata: {
         userId,
-        ReserveBusId,
-        ticketId,
+        subscriptionId,
       },
     })
 
     // Save payment record with status 'pending'
     const paymentInfo = new Payment({
       userId,
-      ticketId,
-      ReserveBusId,
+      subscriptionId,
       amount,
       transactionId: paymentIntent.id,
       status: 'pending',
@@ -77,7 +75,7 @@ export const confirmPayment =  catchAsync(async (req, res) => {
       throw new AppError(404, 'Payment record not found.')
     }
 
-    // const { ticketId } = paymentRecord
+    // const { subscriptionId } = paymentRecord
 
     if (paymentIntent.status === 'succeeded') {
       await Payment.findOneAndUpdate(
@@ -86,7 +84,7 @@ export const confirmPayment =  catchAsync(async (req, res) => {
       )
 
       // ✅ Update ticket payment status
-    //   await Ticket.findByIdAndUpdate(ticketId, { paymentStatus: 'paid' })
+    //   await Ticket.findByIdAndUpdate(subscriptionId, { paymentStatus: 'paid' })
 
       sendResponse(res, {
         statusCode: 200,

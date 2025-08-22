@@ -33,7 +33,12 @@ export const addToPlaylist = catchAsync(async (req, res) => {
 export const getPlaylist = catchAsync(async (req, res) => {
   const userId = req.user._id;
 
-  const playlist = await Playlist.findOne({ user: userId }).populate("audio");
+  const playlist = await Playlist.findOne({ user: userId })  .populate({
+    path: "audio",
+    populate: {
+      path: "category", // populate category inside audio
+    },
+  });
 
   if (!playlist) {
     throw new AppError(httpStatus.NOT_FOUND, "No playlist found");
