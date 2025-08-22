@@ -11,8 +11,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 // ✅ Route: Upload encrypted audio (Admin only)
 router.post(
   '/upload',
-//   protect,
-//   isAdmin,
+  //   protect,
+  //   isAdmin,
   upload.fields([
     { name: 'audio', maxCount: 1 },
     { name: 'coverImage', maxCount: 1 },
@@ -22,8 +22,12 @@ router.post(
 
 // ✅ Route: Stream audio securely with listener tracking
 router.get('/:audioId/play', streamAudio);
-router.patch ('/:audioId/update', updateAudio);
+router.patch('/:audioId/update', 
+  upload.fields([
+  { name: 'audio', maxCount: 1 },
+  { name: 'coverImage', maxCount: 1 },
+]), updateAudio);
 router.get('/all-audio', getAllAudios);
-router.delete( '/:audioId', deleteAudio);
+router.delete('/:audioId', deleteAudio);
 
 export default router;
