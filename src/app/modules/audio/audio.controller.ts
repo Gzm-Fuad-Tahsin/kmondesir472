@@ -86,19 +86,33 @@ if (!files || !files['audio'] || !files['coverImage']) {
   const coverImage = files['coverImage'][0];
 
   // Step 1: Convert MP3 buffer to WAV buffer using ffmpeg
-  const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
-      .toFormat('wav')
-      .on('error', reject)
-      .on('end', () => {
-        const finalBuffer = Buffer.concat(chunks);
-        resolve(finalBuffer);
-      })
-      .pipe();
+  // const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
+  //   const chunks: Buffer[] = [];
+  //   const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
+  //     .toFormat('wav')
+  //     .on('error', reject)
+  //     .on('end', () => {
+  //       const finalBuffer = Buffer.concat(chunks);
+  //       resolve(finalBuffer);
+  //     })
+  //     .pipe();
 
-    command.on('data', (chunk) => chunks.push(chunk));
-  });
+  //   command.on('data', (chunk) => chunks.push(chunk));
+  // });
+  const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
+  const chunks: Buffer[] = [];
+  const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
+    .audioCodec('aac')
+    .audioBitrate('96k')
+    .format('m4a')
+    .on('error', reject)
+    .on('end', () => {
+      resolve(Buffer.concat(chunks));
+    })
+    .pipe();
+
+  command.on('data', (chunk) => chunks.push(chunk));
+});
 
   // Step 2: Upload WAV buffer to Cloudinary
   const audioUploadResult = await uploadToCloudinary(wavBuffer, audioFile.originalname, 'audio_files');
