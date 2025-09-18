@@ -135,7 +135,7 @@ if (!files || !files['audio'] || !files['coverImage']) {
     author,
     about,
     category,
-    chapter
+    chapter: JSON.parse(chapter || '[]'),
   });
 
   sendResponse(res, {
@@ -203,10 +203,11 @@ export const updateAudio = catchAsync(async (req, res) => {
   const updateData = req.body;
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-    const audioFile = files['audio'][0];
-  const coverImage = files['coverImage'][0];
+    
+  
 
-  if(audioFile){
+  if(files['audio']){
+    const audioFile = files['audio'][0];
 
   // Step 1: Convert MP3 buffer to WAV buffer using ffmpeg
   const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
@@ -229,12 +230,20 @@ export const updateAudio = catchAsync(async (req, res) => {
   updateData.filePath = audioUploadResult.secure_url
 }
 
-if(coverImage){
+if(files['coverImage']){
+  const coverImage = files['coverImage'][0];
 
   // Step 3: Upload Cover Image buffer to Cloudinary
   const imageUploadResult = await uploadToCloudinary(coverImage.buffer, coverImage.originalname, 'audio_covers');
   if (!imageUploadResult) throw new AppError(500, 'Failed to upload cover image to Cloudinary');
-  updateData.cover = imageUploadResult.secure_url
+  updateData.coverImage = imageUploadResult.secure_url
+}
+
+if(updateData.chapter) {
+  updateData.chapter = JSON.parse(updateData.chapter)
+}
+if(updateData.tags) {
+  updateData.tags = JSON.parse(updateData.tags);
 }
 
   const audio = await Audio.findByIdAndUpdate(audioId, updateData, { new: true });

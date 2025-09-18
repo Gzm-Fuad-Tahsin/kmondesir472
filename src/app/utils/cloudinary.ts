@@ -69,7 +69,7 @@ export const uploadToCloudinary = async (
         {
           resource_type: resourceType,
           folder,
-          public_id: originalName.split(".")[0], // optional: keep file name
+          // public_id: originalName.split(".")[0], // optional: keep file name
         },
         (error, result) => {
           if (error) {
