@@ -47,101 +47,216 @@ cloudinary.config({
 })
 
 
+// export const uploadAudio = catchAsync(async (req, res) => {
+//   const { title, subject, language, description, tags, author, about,chapter,category } = req.body;
+
+// const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+// if (!files || !files['audio'] || !files['coverImage']) {
+//   throw new AppError( 400, 'Audio and cover image are required.');
+// }
+
+//   // const audioFile = files['audio'][0] as any;
+//   // const coverImage = files['coverImage'][0];
+//   // const originalPath = audioFile.path;
+//   // const wavPath = originalPath.replace(path.extname(originalPath), '.wav');
+//   // const encryptedPath = wavPath.replace('.wav', '.enc');
+
+//   // await new Promise((resolve, reject) => {
+//   //   ffmpeg(originalPath)
+//   //     .toFormat('wav')
+//   //     .on('error', reject)
+//   //     .on('end', resolve)
+//   //     .save(wavPath);
+//   // });
+
+//   // // await encryptFile(wavPath, encryptedPath);
+//   //  // Upload WAV file to Cloudinary (as raw file)
+//   // const audioUploadResult = await cloudinary.uploader.upload(wavPath, {
+//   //   resource_type: 'raw',
+//   //   folder: 'audio_files',
+//   // });
+
+//   // // Upload Cover Image to Cloudinary (as image)
+//   // const imageUploadResult = await cloudinary.uploader.upload(coverImage.path, {
+//   //   folder: 'audio_covers',
+//   // });
+
+//   const audioFile = files['audio'][0];
+//   const coverImage = files['coverImage'][0];
+
+//   // Step 1: Convert MP3 buffer to WAV buffer using ffmpeg
+//   // const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
+//   //   const chunks: Buffer[] = [];
+//   //   const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
+//   //     .toFormat('wav')
+//   //     .on('error', reject)
+//   //     .on('end', () => {
+//   //       const finalBuffer = Buffer.concat(chunks);
+//   //       resolve(finalBuffer);
+//   //     })
+//   //     .pipe();
+
+//   //   command.on('data', (chunk) => chunks.push(chunk));
+//   // });
+//   const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
+//   const chunks: Buffer[] = [];
+//   const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
+//     .audioCodec('aac')
+//     .audioBitrate('96k')
+//     .format('m4a')
+//     .on('error', reject)
+//     .on('end', () => {
+//       resolve(Buffer.concat(chunks));
+//     })
+//     .pipe();
+
+//   command.on('data', (chunk) => chunks.push(chunk));
+// });
+
+//   // Step 2: Upload WAV buffer to Cloudinary
+//   const audioUploadResult = await uploadToCloudinary(wavBuffer, audioFile.originalname, 'audio_files');
+//   if (!audioUploadResult) throw new AppError(500, 'Failed to upload audio to Cloudinary');
+
+//   // Step 3: Upload Cover Image buffer to Cloudinary
+//   const imageUploadResult = await uploadToCloudinary(coverImage.buffer, coverImage.originalname, 'audio_covers');
+//   if (!imageUploadResult) throw new AppError(500, 'Failed to upload cover image to Cloudinary');
+
+//   // Step 4: Save to MongoDB
+
+//   const audio = await Audio.create({
+//     title,
+//     subject,
+//     language,
+//     filePath: audioUploadResult?.secure_url,
+//     coverImage: imageUploadResult?.secure_url,
+//     description,
+//     tags,
+//     author,
+//     about,
+//     category,
+//     chapter: JSON.parse(chapter || '[]'),
+//   });
+
+//   sendResponse(res, {
+//     statusCode: 201,
+//     success: true,
+//     message: 'Audio uploaded and encrypted successfully.',
+//     data: audio,
+//   });
+// });
+
+const uploadStreamToCloudinary = (
+  folder: string,
+  publicId?: string,
+  format?: string,
+  resource_type: "image" | "video" | "raw" = "video" // audio uses 'video'
+): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type,
+        folder,
+        public_id: publicId,
+        format,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    return uploadStream;
+  });
+};
+
 export const uploadAudio = catchAsync(async (req, res) => {
-  const { title, subject, language, description, tags, author, about,chapter,category } = req.body;
+  const {
+    title,
+    subject,
+    language,
+    description,
+    tags,
+    author,
+    about,
+    chapter,
+    category,
+  } = req.body;
 
-const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-if (!files || !files['audio'] || !files['coverImage']) {
-  throw new AppError( 400, 'Audio and cover image are required.');
-}
+  if (!files || !files["audio"] || !files["coverImage"]) {
+    throw new AppError(400, "Audio and cover image are required.");
+  }
 
-  // const audioFile = files['audio'][0] as any;
-  // const coverImage = files['coverImage'][0];
-  // const originalPath = audioFile.path;
-  // const wavPath = originalPath.replace(path.extname(originalPath), '.wav');
-  // const encryptedPath = wavPath.replace('.wav', '.enc');
+  const audioFile = files["audio"][0];
+  const coverImage = files["coverImage"][0];
 
-  // await new Promise((resolve, reject) => {
-  //   ffmpeg(originalPath)
-  //     .toFormat('wav')
-  //     .on('error', reject)
-  //     .on('end', resolve)
-  //     .save(wavPath);
-  // });
+  // ✅ Step 1: Upload audio to Cloudinary via ffmpeg stream
+  const audioUploadResult = await new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "video", // required for audio
+        folder: "audio_files",
+        format: "mp3",
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
 
-  // // await encryptFile(wavPath, encryptedPath);
-  //  // Upload WAV file to Cloudinary (as raw file)
-  // const audioUploadResult = await cloudinary.uploader.upload(wavPath, {
-  //   resource_type: 'raw',
-  //   folder: 'audio_files',
-  // });
+    ffmpeg(streamifier.createReadStream(audioFile.buffer))
+      .audioCodec("libmp3lame")
+      .audioBitrate("128k")
+      .format("mp3")
+      .on("error", reject)
+      .pipe(uploadStream, { end: true });
+  });
 
-  // // Upload Cover Image to Cloudinary (as image)
-  // const imageUploadResult = await cloudinary.uploader.upload(coverImage.path, {
-  //   folder: 'audio_covers',
-  // });
+  if (!audioUploadResult) {
+    throw new AppError(500, "Failed to upload audio to Cloudinary");
+  }
 
-  const audioFile = files['audio'][0];
-  const coverImage = files['coverImage'][0];
+  // ✅ Step 2: Upload cover image directly to Cloudinary
+  const imageUploadResult = await new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "audio_covers",
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
 
-  // Step 1: Convert MP3 buffer to WAV buffer using ffmpeg
-  // const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
-  //   const chunks: Buffer[] = [];
-  //   const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
-  //     .toFormat('wav')
-  //     .on('error', reject)
-  //     .on('end', () => {
-  //       const finalBuffer = Buffer.concat(chunks);
-  //       resolve(finalBuffer);
-  //     })
-  //     .pipe();
+    streamifier.createReadStream(coverImage.buffer).pipe(uploadStream);
+  });
 
-  //   command.on('data', (chunk) => chunks.push(chunk));
-  // });
-  const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
-  const chunks: Buffer[] = [];
-  const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
-    .audioCodec('aac')
-    .audioBitrate('96k')
-    .format('m4a')
-    .on('error', reject)
-    .on('end', () => {
-      resolve(Buffer.concat(chunks));
-    })
-    .pipe();
+  if (!imageUploadResult) {
+    throw new AppError(500, "Failed to upload cover image to Cloudinary");
+  }
 
-  command.on('data', (chunk) => chunks.push(chunk));
-});
-
-  // Step 2: Upload WAV buffer to Cloudinary
-  const audioUploadResult = await uploadToCloudinary(wavBuffer, audioFile.originalname, 'audio_files');
-  if (!audioUploadResult) throw new AppError(500, 'Failed to upload audio to Cloudinary');
-
-  // Step 3: Upload Cover Image buffer to Cloudinary
-  const imageUploadResult = await uploadToCloudinary(coverImage.buffer, coverImage.originalname, 'audio_covers');
-  if (!imageUploadResult) throw new AppError(500, 'Failed to upload cover image to Cloudinary');
-
-  // Step 4: Save to MongoDB
-
+  // ✅ Step 3: Save metadata in MongoDB
   const audio = await Audio.create({
     title,
     subject,
     language,
-    filePath: audioUploadResult?.secure_url,
-    coverImage: imageUploadResult?.secure_url,
+    filePath: (audioUploadResult as any).secure_url,
+    coverImage: (imageUploadResult as any).secure_url,
     description,
     tags,
     author,
     about,
     category,
-    chapter: JSON.parse(chapter || '[]'),
+    chapter: JSON.parse(chapter || "[]"),
   });
 
+  // ✅ Step 4: Send response
   sendResponse(res, {
     statusCode: 201,
     success: true,
-    message: 'Audio uploaded and encrypted successfully.',
+    message: "Audio uploaded successfully.",
     data: audio,
   });
 });
@@ -149,11 +264,11 @@ if (!files || !files['audio'] || !files['coverImage']) {
 export const streamAudio = catchAsync(async (req, res) => {
   const { audioId } = req.params;
   const audio = await Audio.findById(audioId);
-  if (!audio) throw new AppError( 404,'Audio not found');
+  if (!audio) throw new AppError(404, 'Audio not found');
 
   audio.listeners += 1;
   await audio.save();
-  sendResponse(res,{
+  sendResponse(res, {
     statusCode: 200,
     success: true,
     message: 'Audio streamed successfully.',
@@ -167,14 +282,14 @@ export const getAllAudios = catchAsync(async (req, res) => {
   const skip = (page - 1) * limit;
 
   const filter: any = {};
- if (req.query.q) {
-  const search = new RegExp(req.query.q as any, "i"); // case-insensitive regex
-  filter.$or = [
-    { title: search }
-  ];
-}
+  if (req.query.q) {
+    const search = new RegExp(req.query.q as any, "i"); // case-insensitive regex
+    filter.$or = [
+      { title: search }
+    ];
+  }
   if (req.query.subject) filter.subject = req.query.subject;
-  if( req.query.category) filter.category = req.query.category
+  if (req.query.category) filter.category = req.query.category
 
   const [audios, total] = await Promise.all([
     Audio.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }).populate("category"),
@@ -203,48 +318,48 @@ export const updateAudio = catchAsync(async (req, res) => {
   const updateData = req.body;
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-    
-  
 
-  if(files['audio']){
+
+
+  if (files['audio']) {
     const audioFile = files['audio'][0];
 
-  // Step 1: Convert MP3 buffer to WAV buffer using ffmpeg
-  const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
-      .toFormat('wav')
-      .on('error', reject)
-      .on('end', () => {
-        const finalBuffer = Buffer.concat(chunks);
-        resolve(finalBuffer);
-      })
-      .pipe();
+    // Step 1: Convert MP3 buffer to WAV buffer using ffmpeg
+    const wavBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const command = ffmpeg(streamifier.createReadStream(audioFile.buffer))
+        .toFormat('wav')
+        .on('error', reject)
+        .on('end', () => {
+          const finalBuffer = Buffer.concat(chunks);
+          resolve(finalBuffer);
+        })
+        .pipe();
 
-    command.on('data', (chunk) => chunks.push(chunk));
-  });
+      command.on('data', (chunk) => chunks.push(chunk));
+    });
 
-  // Step 2: Upload WAV buffer to Cloudinary
-  const audioUploadResult = await uploadToCloudinary(wavBuffer, audioFile.originalname, 'audio_files');
-  if (!audioUploadResult) throw new AppError(500, 'Failed to upload audio to Cloudinary');
-  updateData.filePath = audioUploadResult.secure_url
-}
+    // Step 2: Upload WAV buffer to Cloudinary
+    const audioUploadResult = await uploadToCloudinary(wavBuffer, audioFile.originalname, 'audio_files');
+    if (!audioUploadResult) throw new AppError(500, 'Failed to upload audio to Cloudinary');
+    updateData.filePath = audioUploadResult.secure_url
+  }
 
-if(files['coverImage']){
-  const coverImage = files['coverImage'][0];
+  if (files['coverImage']) {
+    const coverImage = files['coverImage'][0];
 
-  // Step 3: Upload Cover Image buffer to Cloudinary
-  const imageUploadResult = await uploadToCloudinary(coverImage.buffer, coverImage.originalname, 'audio_covers');
-  if (!imageUploadResult) throw new AppError(500, 'Failed to upload cover image to Cloudinary');
-  updateData.coverImage = imageUploadResult.secure_url
-}
+    // Step 3: Upload Cover Image buffer to Cloudinary
+    const imageUploadResult = await uploadToCloudinary(coverImage.buffer, coverImage.originalname, 'audio_covers');
+    if (!imageUploadResult) throw new AppError(500, 'Failed to upload cover image to Cloudinary');
+    updateData.coverImage = imageUploadResult.secure_url
+  }
 
-if(updateData.chapter) {
-  updateData.chapter = JSON.parse(updateData.chapter)
-}
-if(updateData.tags) {
-  updateData.tags = JSON.parse(updateData.tags);
-}
+  if (updateData.chapter) {
+    updateData.chapter = JSON.parse(updateData.chapter)
+  }
+  if (updateData.tags) {
+    updateData.tags = JSON.parse(updateData.tags);
+  }
 
   const audio = await Audio.findByIdAndUpdate(audioId, updateData, { new: true });
 
